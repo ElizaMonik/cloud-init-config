@@ -1,0 +1,74 @@
+
+#cloud-config
+package_upgrade: true
+packages:
+  - nginx
+  - nodejs
+  - npm
+write_files:
+  - owner: www-data:www-data
+  - path: /etc/nginx/sites-available/default
+    content: |
+      server {
+        listen 80;
+        location / {
+          proxy_pass http://localhost:3000;
+          proxy_http_version 1.1;
+          proxy_set_header Upgrade $http_upgrade;
+          proxy_set_header Connection keep-alive;
+          proxy_set_header Host $host;
+          proxy_cache_bypass $http_upgrade;
+        }
+      }
+  - owner: azureuser:azureuser
+  - path: /home/azureuser/myapp/index.js
+    content: |
+      var express = require('express');
+      var app = express();
+      app.get('/', function (req, res) {
+        res.send(`
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>Bienvenido</title>
+              <style>
+                  body {
+                      font-family: Arial, sans-serif;
+                      text-align: center;
+                      background-color: #f0f0f0;
+                      margin: 0;
+                      padding: 0;
+                  }
+                  header {
+                      background-color: #4CAF50;
+                      color: white;
+                      padding: 1em 0;
+                  }
+                  h1 {
+                      margin: 20px 0;
+                  }
+                  p {
+                      font-size: 18px;
+                  }
+              </style>
+          </head>
+          <body>
+              <header>
+                  <h1>Bienvenido a la App de Monica Elizabeth Jara Alvarado</h1>
+              </header>
+              <p>Este es un servidor configurado en Azure con NGINX y Node.js.</p>
+          </body>
+          </html>
+        `);
+      });
+      app.listen(3000, function () {
+        console.log('Hello world app listening on port 3000!');
+      });
+runcmd:
+  - service nginx restart
+  - cd "/home/azureuser/myapp"
+  - npm init -y
+  - npm install express
+  - nodejs index.js
